@@ -1,6 +1,6 @@
 PalletTown_Script:
 	CheckEvent EVENT_GOT_POKEBALLS_FROM_OAK
-	jr z, .next
+	iffalse .next
 	SetEvent EVENT_PALLET_AFTER_GETTING_POKEBALLS
 .next
 	call EnableAutoTextBoxDrawing
@@ -20,131 +20,78 @@ PalletTown_ScriptPointers:
 
 PalletTownDefaultScript:
 	CheckEvent EVENT_FOLLOWED_OAK_INTO_LAB
-	ret nz
-	ld a, [wYCoord]
-	cp 1 ; is player near north exit?
-	ret nz
-	xor a
-	ldh [hJoyHeld], a
-	ld a, PLAYER_DIR_DOWN
-	ld [wPlayerMovingDirection], a
-	ld a, SFX_STOP_ALL_MUSIC
-	call PlaySound
-	ld a, 0 ; BANK(Music_MeetProfOak)
-	ld c, a
-	ld a, MUSIC_MEET_PROF_OAK ; "oak appears" music
-	call PlayMusic
-	ld a, PAD_SELECT | PAD_START | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
+	endiftrue
+	checkmem wYCoord
+	endifneq 1
+	memseth hJoyHeld, 0
+	memset wPlayerMovingDirection, PLAYER_DIR_DOWN
+	playmusic MUSIC_MEET_PROF_OAK
+	memset wJoyIgnore, PAD_SELECT | PAD_START | PAD_CTRL_PAD
 	SetEvent EVENT_OAK_APPEARED_IN_PALLET
-
 	; trigger the next script
-	ld a, SCRIPT_PALLETTOWN_OAK_HEY_WAIT
-	ld [wPalletTownCurScript], a
+	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_OAK_HEY_WAIT
 	ret
 
 PalletTownOakHeyWaitScript:
-	xor a
-	ld [wOakWalkedToPlayer], a
-	ld a, TEXT_PALLETTOWN_OAK
-	ldh [hTextID], a
-	call DisplayTextID
-	ld a, PAD_BUTTONS | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-	ld a, HS_PALLET_TOWN_OAK
-	ld [wMissableObjectIndex], a
-	predef ShowObject
-
+	disablewaitbutton
+	writetextm TEXT_PALLETTOWN_OAK ;writetextm necessary for map coord scripts!
+	enablewaitbutton ; reset button wait back
+	appearobj HS_PALLET_TOWN_OAK
 	; trigger the next script
-	ld a, SCRIPT_PALLETTOWN_OAK_WALKS_TO_PLAYER
-	ld [wPalletTownCurScript], a
+	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_OAK_WALKS_TO_PLAYER
 	ret
 
 PalletTownOakWalksToPlayerScript:
-	ld a, PALLETTOWN_OAK
-	ldh [hSpriteIndex], a
-	ld a, SPRITE_FACING_UP
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
+	spritedir PALLETTOWN_OAK, SPRITE_FACING_UP
 	call Delay3
-	ld a, 1
-	ld [wYCoord], a
-	ld a, 1
-	ldh [hNPCPlayerRelativePosPerspective], a
-	ld a, 1
-	swap a
-	ldh [hNPCSpriteOffset], a
-	predef CalcPositionOfPlayerRelativeToNPC
-	ld hl, hNPCPlayerYDistance
-	dec [hl]
-	predef FindPathToPlayer ; load Oak's movement into wNPCMovementDirections2
-	ld de, wNPCMovementDirections2
-	ld a, PALLETTOWN_OAK
-	ldh [hSpriteIndex], a
-	call MoveSprite
-	ld a, PAD_BUTTONS | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-
+	memset wYCoord, 1
+	locateplayer ; load Oak's movement into wNPCMovementDirections2
+	applymovement PALLETTOWN_OAK, wNPCMovementDirections2
+	memset wJoyIgnore, PAD_BUTTONS | PAD_CTRL_PAD
 	; trigger the next script
-	ld a, SCRIPT_PALLETTOWN_OAK_NOT_SAFE_COME_WITH_ME
-	ld [wPalletTownCurScript], a
+	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_OAK_NOT_SAFE_COME_WITH_ME
 	ret
 
 PalletTownOakNotSafeComeWithMeScript:
-	ld a, [wStatusFlags5]
-	bit BIT_SCRIPTED_NPC_MOVEMENT, a
-	ret nz
-	xor a ; ld a, SPRITE_FACING_DOWN
-	ld [wSpritePlayerStateData1FacingDirection], a
-	ld a, TRUE
-	ld [wOakWalkedToPlayer], a
-	ld a, PAD_SELECT | PAD_START | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-	ld a, TEXT_PALLETTOWN_OAK
-	ldh [hTextID], a
-	call DisplayTextID
+	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
+	endiftrue
+	memset wSpritePlayerStateData1FacingDirection, SPRITE_FACING_DOWN
+	memset wOakWalkedToPlayer, TRUE
+	memset wJoyIgnore, PAD_SELECT | PAD_START | PAD_CTRL_PAD
+	writetextm TEXT_PALLETTOWN_OAK_UNSAFE
+	
 ; set up movement script that causes the player to follow Oak to his lab
-	ld a, PAD_BUTTONS | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-	ld a, PALLETTOWN_OAK
-	ld [wSpriteIndex], a
-	xor a
-	ld [wNPCMovementScriptFunctionNum], a
-	ld a, 1
-	ld [wNPCMovementScriptPointerTableNum], a
+	memset wJoyIgnore, PAD_BUTTONS | PAD_CTRL_PAD
+	memset wSpriteIndex, PALLETTOWN_OAK
+	memset wNPCMovementScriptFunctionNum, 0
+	memset wNPCMovementScriptPointerTableNum, 1
 	ldh a, [hLoadedROMBank]
 	ld [wNPCMovementScriptBank], a
 
 	; trigger the next script
-	ld a, SCRIPT_PALLETTOWN_PLAYER_FOLLOWS_OAK
-	ld [wPalletTownCurScript], a
+	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_PLAYER_FOLLOWS_OAK
 	ret
 
 PalletTownPlayerFollowsOakScript:
-	ld a, [wNPCMovementScriptPointerTableNum]
-	and a ; is the movement script over?
-	ret nz
+	checkmem wNPCMovementScriptPointerTableNum
+	checkbool
+	endifboolunset
 
 	; trigger the next script
-	ld a, SCRIPT_PALLETTOWN_DAISY
-	ld [wPalletTownCurScript], a
+	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_DAISY
 	ret
 
 PalletTownDaisyScript:
 	CheckEvent EVENT_DAISY_WALKING
-	jr nz, .next
+	iftrue .next
 	CheckBothEventsSet EVENT_GOT_TOWN_MAP, EVENT_ENTERED_BLUES_HOUSE, 1
-	jr nz, .next
+	iftrue .next
 	SetEvent EVENT_DAISY_WALKING
-	ld a, HS_DAISY_SITTING
-	ld [wMissableObjectIndex], a
-	predef HideObject
-	ld a, HS_DAISY_WALKING
-	ld [wMissableObjectIndex], a
-	predef_jump ShowObject
+	disappearobj HS_DAISY_SITTING
+	appearobj HS_DAISY_WALKING
 .next
 	CheckEvent EVENT_GOT_POKEBALLS_FROM_OAK
-	ret z
+	endiffalse
 	SetEvent EVENT_PALLET_AFTER_GETTING_POKEBALLS_2
 PalletTownNoopScript:
 	ret
@@ -158,59 +105,73 @@ PalletTown_TextPointers:
 	dw_const PalletTownSignText,             TEXT_PALLETTOWN_SIGN
 	dw_const PalletTownPlayersHouseSignText, TEXT_PALLETTOWN_PLAYERSHOUSE_SIGN
 	dw_const PalletTownRivalsHouseSignText,  TEXT_PALLETTOWN_RIVALSHOUSE_SIGN
+	dw_const PalletTownOakItsUnsafeText,     TEXT_PALLETTOWN_OAK_UNSAFE
 
 PalletTownOakText:
+	text "OAK: Hey! Wait!"
+	line "Don't go out!@"
 	text_asm
-	ld a, [wOakWalkedToPlayer]
-	and a
-	jr nz, .next
-	ld a, 1
-	ld [wDoNotWaitForButtonPressAfterDisplayingText], a
-	ld hl, .HeyWaitDontGoOutText
-	jr .done
-.next
-	ld hl, .ItsUnsafeText
-.done
-	call PrintText
-	jp TextScriptEnd
-
-.HeyWaitDontGoOutText:
-	text_far _PalletTownOakHeyWaitDontGoOutText
-	text_asm
-	ld c, 10
-	call DelayFrames
-	xor a
-	ld [wEmotionBubbleSpriteIndex], a ; player's sprite
-	ld [wWhichEmotionBubble], a ; EXCLAMATION_BUBBLE
-	predef EmotionBubble
-	ld a, PLAYER_DIR_DOWN
-	ld [wPlayerMovingDirection], a
-	jp TextScriptEnd
-
-.ItsUnsafeText:
-	text_far _PalletTownOakItsUnsafeText
+		waitframes 10	
+		showemote 0, EXCLAMATION_BUBBLE
+		memset wPlayerMovingDirection, PLAYER_DIR_DOWN
+		memset wJoyIgnore, PAD_BUTTONS | PAD_CTRL_PAD
+		jp TextScriptEnd
 	text_end
 
 PalletTownGirlText:
-	text_far _PalletTownGirlText
+	text "I'm raising"
+	line "#MON too!"
+
+	para "When they get"
+	line "strong, they can"
+	cont "protect me!"
+	done
 	text_end
 
 PalletTownFisherText:
-	text_far _PalletTownFisherText
+	text "Technology is"
+	line "incredible!"
+
+	para "You can now store"
+	line "and recall items"
+	cont "and #MON as"
+	cont "data via PC!"
+	done
 	text_end
 
 PalletTownOaksLabSignText:
-	text_far _PalletTownOaksLabSignText
+	text "OAK #MON"
+	line "RESEARCH LAB"
+	done
 	text_end
 
 PalletTownSignText:
-	text_far _PalletTownSignText
+	text "PALLET TOWN"
+	line "Shades of your"
+	cont "journey await!"
+	done
 	text_end
 
 PalletTownPlayersHouseSignText:
-	text_far _PalletTownPlayersHouseSignText
+	text "<PLAYER>'s house "
+	done
 	text_end
 
 PalletTownRivalsHouseSignText:
-	text_far _PalletTownRivalsHouseSignText
+	text "<RIVAL>'s house "
+	done
 	text_end
+
+PalletTownOakItsUnsafeText:
+	text "OAK: It's unsafe!"
+	line "Wild #MON live"
+	cont "in tall grass!"
+
+	para "You need your own"
+	line "#MON for your"
+	cont "protection."
+	cont "I know!"
+
+	para "Here, come with"
+	line "me!"
+	done

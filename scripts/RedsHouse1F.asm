@@ -8,11 +8,9 @@ RedsHouse1F_TextPointers:
 
 RedsHouse1FMomText:
 	text_asm
-	ld a, [wStatusFlags4]
-	bit BIT_GOT_STARTER, a
-	jr nz, .heal
-	ld hl, .WakeUpText
-	call PrintText
+	checkbit wStatusFlags4, BIT_GOT_STARTER
+	iftrue .heal
+	writetext .WakeUpText
 	jr .done
 .heal
 	call RedsHouse1FMomHealScript
@@ -24,27 +22,15 @@ RedsHouse1FMomText:
 	text_end
 
 RedsHouse1FMomHealScript:
-	ld hl, RedsHouse1FMomYouShouldRestText
-	call PrintText
+	writetext RedsHouse1FMomYouShouldRestText
 	call GBFadeOutToWhite
 	call ReloadMapData
-	predef HealParty
-	ld a, MUSIC_PKMN_HEALED
-;	ld [wNewSoundID], a
-	call PlayMusic
-
+	playmusic MUSIC_PKMN_HEALED
 	call WaitForSongToFinish
-;.next
-;	ld a, [wChannelSoundIDs]
-;	cp MUSIC_PKMN_HEALED
-;	jr z, .next
-
-	ld a, [wMapMusicSoundID]
-;	ld [wNewSoundID], a
-	call PlayMusic
+	playmapmusic
 	call GBFadeInFromWhite
-	ld hl, RedsHouse1FMomLookingGreatText
-	jp PrintText
+	writetext RedsHouse1FMomLookingGreatText
+
 
 RedsHouse1FMomYouShouldRestText:
 	text_far _RedsHouse1FMomYouShouldRestText
@@ -55,19 +41,19 @@ RedsHouse1FMomLookingGreatText:
 
 RedsHouse1FTVText:
 	text_asm
-	ld a, [wSpritePlayerStateData1FacingDirection]
-	cp SPRITE_FACING_UP
-	ld hl, .WrongSideText
-	jr nz, .got_text
-	ld hl, .StandByMeMovieText
-.got_text
-	call PrintText
+	checkmem wSpritePlayerStateData1FacingDirection
+	ifneq SPRITE_FACING_UP, .wrongside
+	writetext StandByMeMovieText
+	jp TextScriptEnd
+.wrongside:
+	writetext WrongSideText
 	jp TextScriptEnd
 
-.StandByMeMovieText:
+
+StandByMeMovieText:
 	text_far _RedsHouse1FTVStandByMeMovieText
 	text_end
 
-.WrongSideText:
+WrongSideText:
 	text_far _RedsHouse1FTVWrongSideText
 	text_end

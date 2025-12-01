@@ -7,11 +7,12 @@ INCLUDE "macros/code.asm"
 INCLUDE "macros/gfx.asm"
 INCLUDE "macros/coords.asm"
 INCLUDE "macros/vc.asm"
-
+INCLUDE "macros/hlabstract.asm"
 ;INCLUDE "macros/scripts/audio.asm"
 INCLUDE "macros/scripts/maps.asm"
 INCLUDE "macros/scripts/events.asm"
 INCLUDE "macros/scripts/text.asm"
+INCLUDE "macros/scripts/scrcmd.asm"
 
 INCLUDE "constants/charmap.asm"
 INCLUDE "constants/hardware.inc"

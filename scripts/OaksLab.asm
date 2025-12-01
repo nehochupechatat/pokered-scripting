@@ -357,6 +357,7 @@ OaksLabRivalChallengesPlayerScript:
 	ld a, TEXT_OAKSLAB_RIVAL_ILL_TAKE_YOU_ON
 	ldh [hTextID], a
 	call DisplayTextID
+	
 	ld a, $1
 	ldh [hNPCPlayerRelativePosPerspective], a
 	ld a, $1

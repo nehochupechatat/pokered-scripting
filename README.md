@@ -1,6 +1,8 @@
-# pokered-crysaudio
+# pokered-scripting
 
-Pokémon Red/Blue with the Pokémon Crystal sound engine stitched in. Made by Sanqui and dannye.
+Pokémon Red/Blue with various high-level abstractions to lower the bar of entry for Gen 1 ROMhacking.
+
+Whether it will be finished is uncertain, but y'all are welcome to contribute!
 
 Original README follows...
 

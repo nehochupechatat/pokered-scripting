@@ -10,12 +10,9 @@ RedsHouse2F_ScriptPointers:
 	dw_const RedsHouse2FNoopScript,    SCRIPT_REDSHOUSE2F_NOOP
 
 RedsHouse2FDefaultScript:
-	xor a
-	ldh [hJoyHeld], a
-	ld a, PLAYER_DIR_UP
-	ld [wPlayerMovingDirection], a
-	ld a, SCRIPT_REDSHOUSE2F_NOOP
-	ld [wRedsHouse2FCurScript], a
+	memseth hJoyHeld, 0
+	memset wPlayerMovingDirection, PLAYER_DIR_UP
+	memset wRedsHouse2FCurScript, SCRIPT_REDSHOUSE2F_NOOP
 	ret
 
 RedsHouse2FNoopScript:
