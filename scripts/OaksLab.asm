@@ -33,28 +33,19 @@ OaksLab_ScriptPointers:
 
 OaksLabDefaultScript:
 	CheckEvent EVENT_OAK_APPEARED_IN_PALLET
-	ret z
-	ld a, [wNPCMovementScriptFunctionNum]
-	and a
-	ret nz
-	ld a, HS_OAKS_LAB_OAK_2
-	ld [wMissableObjectIndex], a
-	predef ShowObject
-	ld hl, wStatusFlags4
-	res BIT_NO_BATTLES, [hl]
+	endiffalse
+	
+	endif_memand_unset wNPCMovementScriptFunctionNum
+	
+	appearobj HS_OAKS_LAB_OAK_2
+	resetbit wStatusFlags4, BIT_NO_BATTLES
 
-	ld a, SCRIPT_OAKSLAB_OAK_ENTERS_LAB
-	ld [wOaksLabCurScript], a
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_OAK_ENTERS_LAB
 	ret
 
 OaksLabOakEntersLabScript:
-	ld a, OAKSLAB_OAK2
-	ldh [hSpriteIndex], a
-	ld de, OakEntryMovement
-	call MoveSprite
-
-	ld a, SCRIPT_OAKSLAB_HIDE_SHOW_OAKS
-	ld [wOaksLabCurScript], a
+	applymovement OAKSLAB_OAK2, OakEntryMovement
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_HIDE_SHOW_OAKS
 	ret
 
 OakEntryMovement:
@@ -64,41 +55,22 @@ OakEntryMovement:
 	db -1 ; end
 
 OaksLabHideShowOaksScript:
-	ld a, [wStatusFlags5]
-	bit BIT_SCRIPTED_NPC_MOVEMENT, a
-	ret nz
-	ld a, HS_OAKS_LAB_OAK_2
-	ld [wMissableObjectIndex], a
-	predef HideObject
-	ld a, HS_OAKS_LAB_OAK_1
-	ld [wMissableObjectIndex], a
-	predef ShowObject
-
-	ld a, SCRIPT_OAKSLAB_PLAYER_ENTERS_LAB
-	ld [wOaksLabCurScript], a
+	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
+	endiffalse
+	disappearobj HS_OAKS_LAB_OAK_2
+	appearobj HS_OAKS_LAB_OAK_1
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_PLAYER_ENTERS_LAB
 	ret
 
 OaksLabPlayerEntersLabScript:
 	call Delay3
-	ld hl, wSimulatedJoypadStatesEnd
-	ld de, PlayerEntryMovementRLE
-	call DecodeRLEList
+	moveplayer_rle PlayerEntryMovementRLE
 	dec a
 	ld [wSimulatedJoypadStatesIndex], a
 	call StartSimulatingJoypadStates
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	xor a
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
-	ld a, OAKSLAB_OAK1
-	ldh [hSpriteIndex], a
-	xor a
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
-
-	ld a, SCRIPT_OAKSLAB_FOLLOWED_OAK
-	ld [wOaksLabCurScript], a
+	spritedir OAKSLAB_RIVAL, SPRITE_FACING_DOWN
+	spritedir OAKSLAB_OAK1, SPRITE_FACING_DOWN
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_FOLLOWED_OAK
 	ret
 
 PlayerEntryMovementRLE:
@@ -106,85 +78,48 @@ PlayerEntryMovementRLE:
 	db -1 ; end
 
 OaksLabFollowedOakScript:
-	ld a, [wSimulatedJoypadStatesIndex]
-	and a
-	ret nz
+	endif_memand_unset wSimulatedJoypadStatesIndex
+	
 	SetEvent EVENT_FOLLOWED_OAK_INTO_LAB
 	SetEvent EVENT_FOLLOWED_OAK_INTO_LAB_2
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	ld a, SPRITE_FACING_UP
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
-	call UpdateSprites
-	ld hl, wStatusFlags7
-	res BIT_NO_MAP_MUSIC, [hl]
-	call PlayDefaultMusic
-
-	ld a, SCRIPT_OAKSLAB_OAK_CHOOSE_MON_SPEECH
-	ld [wOaksLabCurScript], a
+	
+	spritedir OAKSLAB_RIVAL, SPRITE_FACING_UP
+	playmapmusic
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_OAK_CHOOSE_MON_SPEECH
 	ret
 
 OaksLabOakChooseMonSpeechScript:
-	ld a, PAD_SELECT | PAD_START | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-	ld a, TEXT_OAKSLAB_RIVAL_FED_UP_WITH_WAITING
-	ldh [hTextID], a
-	call DisplayTextID
+	lockctrls_all
+	writetextm TEXT_OAKSLAB_RIVAL_FED_UP_WITH_WAITING
 	call Delay3
-	ld a, TEXT_OAKSLAB_OAK_CHOOSE_MON
-	ldh [hTextID], a
-	call DisplayTextID
+	writetextm TEXT_OAKSLAB_OAK_CHOOSE_MON
 	call Delay3
-	ld a, TEXT_OAKSLAB_RIVAL_WHAT_ABOUT_ME
-	ldh [hTextID], a
-	call DisplayTextID
+	writetextm TEXT_OAKSLAB_RIVAL_WHAT_ABOUT_ME
 	call Delay3
-	ld a, TEXT_OAKSLAB_OAK_BE_PATIENT
-	ldh [hTextID], a
-	call DisplayTextID
+	writetextm TEXT_OAKSLAB_OAK_BE_PATIENT
 	SetEvent EVENT_OAK_ASKED_TO_CHOOSE_MON
-	xor a
-	ld [wJoyIgnore], a
-
-	ld a, SCRIPT_OAKSLAB_PLAYER_DONT_GO_AWAY_SCRIPT
-	ld [wOaksLabCurScript], a
+	releasectrls
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_PLAYER_DONT_GO_AWAY_SCRIPT
 	ret
 
 OaksLabPlayerDontGoAwayScript:
-	ld a, [wYCoord]
-	cp 6
-	ret nz
-	ld a, OAKSLAB_OAK1
-	ldh [hSpriteIndex], a
-	xor a ; SPRITE_FACING_DOWN
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	xor a ; SPRITE_FACING_DOWN
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
+	checkmem wYCoord
+	endifneq 6
+	
+	spritedir OAKSLAB_OAK1, SPRITE_FACING_DOWN
+	spritedir OAKSLAB_RIVAL, SPRITE_FACING_DOWN
 	call UpdateSprites
-	ld a, TEXT_OAKSLAB_OAK_DONT_GO_AWAY_YET
-	ldh [hTextID], a
-	call DisplayTextID
-	ld a, $1
-	ld [wSimulatedJoypadStatesIndex], a
-	ld a, PAD_UP
-	ld [wSimulatedJoypadStatesEnd], a
+	writetextm TEXT_OAKSLAB_OAK_DONT_GO_AWAY_YET
+	memset wSimulatedJoypadStatesIndex, 1
+	memset wSimulatedJoypadStatesEnd, PAD_UP
 	call StartSimulatingJoypadStates
-	ld a, PLAYER_DIR_UP
-	ld [wPlayerMovingDirection], a
+	turnplayer PLAYER_DIR_UP
 
-	ld a, SCRIPT_OAKSLAB_PLAYER_FORCED_TO_WALK_BACK_SCRIPT
-	ld [wOaksLabCurScript], a
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_PLAYER_FORCED_TO_WALK_BACK_SCRIPT
 	ret
 
 OaksLabPlayerForcedToWalkBackScript:
-	ld a, [wSimulatedJoypadStatesIndex]
-	and a
-	ret nz
+	endif_memand_unset wSimulatedJoypadStatesIndex
 	call Delay3
 
 	ld a, SCRIPT_OAKSLAB_PLAYER_DONT_GO_AWAY_SCRIPT
@@ -192,11 +127,9 @@ OaksLabPlayerForcedToWalkBackScript:
 	ret
 
 OaksLabChoseStarterScript:
-	ld a, [wPlayerStarter]
-	cp STARTER1
-	jr z, .Charmander
-	cp STARTER2
-	jr z, .Squirtle
+	checkmem wPlayerStarter
+	ifeq STARTER1, .Charmander
+	ifeq STARTER2, .Squirtle
 	jr .Bulbasaur
 .Charmander
 	ld de, .MiddleBallMovement1

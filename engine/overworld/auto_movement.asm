@@ -100,7 +100,7 @@ PalletMovementScript_WalkToLab:
 	swap a
 	ld [wNPCMovementScriptSpriteOffset], a
 	memset wSpritePlayerStateData2MovementByte1, 0
-	loadrlelist wSimulatedJoypadStatesEnd, RLEList_PlayerWalkToLab
+	moveplayer_rle RLEList_PlayerWalkToLab
 	dec a
 	ld [wSimulatedJoypadStatesIndex], a
 	loadrlelist wNPCMovementDirections2, RLEList_ProfOakWalkToLab
@@ -127,9 +127,7 @@ RLEList_PlayerWalkToLab:
 	db -1 ; end
 
 PalletMovementScript_Done:
-	checkmem wSimulatedJoypadStatesIndex
-	checkbool
-	endifboolunset
+	endif_memand_unset wSimulatedJoypadStatesIndex
 	disappearobj HS_PALLET_TOWN_OAK
 	resetbit wStatusFlags5, BIT_SCRIPTED_MOVEMENT_STATE
 	resetbit wStatusFlags4, BIT_INIT_SCRIPTED_MOVEMENT

@@ -80,3 +80,23 @@ MACRO loadrlelist
 	ld de, \2
 	call DecodeRLEList
 ENDM
+
+MACRO moveplayer_rle
+	loadrlelist wSimulatedJoypadStatesEnd, \1
+ENDM
+
+MACRO releasectrls
+	memset wJoyIgnore, 0
+ENDM
+
+MACRO lockctrls_all
+	memset wJoyIgnore, PAD_SELECT | PAD_START | PAD_CTRL_PAD
+ENDM
+
+MACRO lockctrls_nostart
+	memset wJoyIgnore, PAD_SELECT | PAD_CTRL_PAD
+ENDM
+
+MACRO turnplayer
+	memset wPlayerMovingDirection, \1
+ENDM

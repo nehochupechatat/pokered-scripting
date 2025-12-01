@@ -26,7 +26,7 @@ PalletTownDefaultScript:
 	memseth hJoyHeld, 0
 	memset wPlayerMovingDirection, PLAYER_DIR_DOWN
 	playmusic MUSIC_MEET_PROF_OAK
-	memset wJoyIgnore, PAD_SELECT | PAD_START | PAD_CTRL_PAD
+	lockctrls_all
 	SetEvent EVENT_OAK_APPEARED_IN_PALLET
 	; trigger the next script
 	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_OAK_HEY_WAIT
@@ -47,7 +47,7 @@ PalletTownOakWalksToPlayerScript:
 	memset wYCoord, 1
 	locateplayer ; load Oak's movement into wNPCMovementDirections2
 	applymovement PALLETTOWN_OAK, wNPCMovementDirections2
-	memset wJoyIgnore, PAD_BUTTONS | PAD_CTRL_PAD
+	lockctrls_nostart 
 	; trigger the next script
 	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_OAK_NOT_SAFE_COME_WITH_ME
 	ret
@@ -56,12 +56,12 @@ PalletTownOakNotSafeComeWithMeScript:
 	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
 	endiftrue
 	memset wSpritePlayerStateData1FacingDirection, SPRITE_FACING_DOWN
-	memset wOakWalkedToPlayer, TRUE
-	memset wJoyIgnore, PAD_SELECT | PAD_START | PAD_CTRL_PAD
+	lockctrls_all
 	writetextm TEXT_PALLETTOWN_OAK_UNSAFE
 	
 ; set up movement script that causes the player to follow Oak to his lab
-	memset wJoyIgnore, PAD_BUTTONS | PAD_CTRL_PAD
+
+	lockctrls_nostart ;unlock start button!
 	memset wSpriteIndex, PALLETTOWN_OAK
 	memset wNPCMovementScriptFunctionNum, 0
 	memset wNPCMovementScriptPointerTableNum, 1
@@ -73,9 +73,7 @@ PalletTownOakNotSafeComeWithMeScript:
 	ret
 
 PalletTownPlayerFollowsOakScript:
-	checkmem wNPCMovementScriptPointerTableNum
-	checkbool
-	endifboolunset
+	endif_memand_unset wNPCMovementScriptPointerTableNum
 
 	; trigger the next script
 	memset wPalletTownCurScript, SCRIPT_PALLETTOWN_DAISY
@@ -113,8 +111,8 @@ PalletTownOakText:
 	text_asm
 		waitframes 10	
 		showemote 0, EXCLAMATION_BUBBLE
-		memset wPlayerMovingDirection, PLAYER_DIR_DOWN
-		memset wJoyIgnore, PAD_BUTTONS | PAD_CTRL_PAD
+		turnplayer PLAYER_DIR_DOWN
+		lockctrls_nostart
 		jp TextScriptEnd
 	text_end
 

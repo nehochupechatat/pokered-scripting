@@ -61,11 +61,11 @@ MACRO endiftrue
 	ret nz
 ENDM
 
-MACRO endifboolset
+MACRO endifbset
 	ret z
 ENDM
 
-MACRO endifboolunset
+MACRO endifbunset
 	ret nz
 ENDM
 
@@ -77,4 +77,16 @@ ENDM
 MACRO endifneq
 	cp \1
 	ret nz
+ENDM
+
+MACRO endif_memand_set
+	checkmem \1
+	checkbool
+	endifbset
+ENDM
+
+MACRO endif_memand_unset
+	checkmem \1
+	checkbool
+	endifbunset
 ENDM
