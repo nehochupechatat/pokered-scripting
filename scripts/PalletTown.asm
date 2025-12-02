@@ -53,8 +53,7 @@ PalletTownOakWalksToPlayerScript:
 	ret
 
 PalletTownOakNotSafeComeWithMeScript:
-	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
-	endiftrue
+	endifnpcmoving
 	memset wSpritePlayerStateData1FacingDirection, SPRITE_FACING_DOWN
 	lockctrls_all
 	writetextm TEXT_PALLETTOWN_OAK_UNSAFE

@@ -83,6 +83,8 @@ ENDM
 
 MACRO moveplayer_rle
 	loadrlelist wSimulatedJoypadStatesEnd, \1
+	dec a
+	ld [wSimulatedJoypadStatesIndex], a
 ENDM
 
 MACRO releasectrls
@@ -99,4 +101,20 @@ ENDM
 
 MACRO turnplayer
 	memset wPlayerMovingDirection, \1
+ENDM
+
+MACRO loadtrainer
+	memset wCurOpponent, \1
+	memset wTrainerNo, \2
+ENDM
+
+MACRO winlosstext
+	ld hl, \1
+	ld de, \2
+	call SaveEndBattleTextPointers
+ENDM
+
+MACRO endifnpcmoving
+	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
+	endiftrue
 ENDM

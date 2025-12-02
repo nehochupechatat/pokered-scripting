@@ -79,8 +79,7 @@ PalletMovementScript_OakMoveLeft:
 	ret
 
 PalletMovementScript_PlayerMoveLeft:
-	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
-	endiftrue ; return if Oak is still moving
+	endifnpcmoving
 	ld a, [wNumStepsToTake]
 	ld [wSimulatedJoypadStatesIndex], a
 	ldh [hNPCMovementDirections2Index], a
@@ -101,8 +100,6 @@ PalletMovementScript_WalkToLab:
 	ld [wNPCMovementScriptSpriteOffset], a
 	memset wSpritePlayerStateData2MovementByte1, 0
 	moveplayer_rle RLEList_PlayerWalkToLab
-	dec a
-	ld [wSimulatedJoypadStatesIndex], a
 	loadrlelist wNPCMovementDirections2, RLEList_ProfOakWalkToLab
 	resetbit wStatusFlags4, BIT_INIT_SCRIPTED_MOVEMENT
 	setbit wStatusFlags5, BIT_SCRIPTED_MOVEMENT_STATE

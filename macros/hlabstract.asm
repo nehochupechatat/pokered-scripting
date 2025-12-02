@@ -1,9 +1,5 @@
 MACRO memset ;wram
-	IF \2 == 0
-		xor a
-	ELSE
-		ld a, \2
-	ENDC
+	ld a, \2
 	ld [\1], a
 ENDM
 

@@ -34,29 +34,24 @@ OaksLab_ScriptPointers:
 OaksLabDefaultScript:
 	CheckEvent EVENT_OAK_APPEARED_IN_PALLET
 	endiffalse
-	
-	endif_memand_unset wNPCMovementScriptFunctionNum
-	
+	endif_memand_unset wNPCMovementScriptFunctionNum	
 	appearobj HS_OAKS_LAB_OAK_2
 	resetbit wStatusFlags4, BIT_NO_BATTLES
-
 	memset wOaksLabCurScript, SCRIPT_OAKSLAB_OAK_ENTERS_LAB
 	ret
 
 OaksLabOakEntersLabScript:
-	applymovement OAKSLAB_OAK2, OakEntryMovement
+	applymovement OAKSLAB_OAK2, .OakEntryMovement
 	memset wOaksLabCurScript, SCRIPT_OAKSLAB_HIDE_SHOW_OAKS
 	ret
-
-OakEntryMovement:
+.OakEntryMovement
 	db NPC_MOVEMENT_UP
 	db NPC_MOVEMENT_UP
 	db NPC_MOVEMENT_UP
 	db -1 ; end
 
 OaksLabHideShowOaksScript:
-	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
-	endiffalse
+	endifnpcmoving
 	disappearobj HS_OAKS_LAB_OAK_2
 	appearobj HS_OAKS_LAB_OAK_1
 	memset wOaksLabCurScript, SCRIPT_OAKSLAB_PLAYER_ENTERS_LAB
@@ -65,8 +60,6 @@ OaksLabHideShowOaksScript:
 OaksLabPlayerEntersLabScript:
 	call Delay3
 	moveplayer_rle PlayerEntryMovementRLE
-	dec a
-	ld [wSimulatedJoypadStatesIndex], a
 	call StartSimulatingJoypadStates
 	spritedir OAKSLAB_RIVAL, SPRITE_FACING_DOWN
 	spritedir OAKSLAB_OAK1, SPRITE_FACING_DOWN
@@ -121,9 +114,7 @@ OaksLabPlayerDontGoAwayScript:
 OaksLabPlayerForcedToWalkBackScript:
 	endif_memand_unset wSimulatedJoypadStatesIndex
 	call Delay3
-
-	ld a, SCRIPT_OAKSLAB_PLAYER_DONT_GO_AWAY_SCRIPT
-	ld [wOaksLabCurScript], a
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_PLAYER_DONT_GO_AWAY_SCRIPT
 	ret
 
 OaksLabChoseStarterScript:
@@ -132,13 +123,59 @@ OaksLabChoseStarterScript:
 	ifeq STARTER2, .Squirtle
 	jr .Bulbasaur
 .Charmander
-	ld de, .MiddleBallMovement1
-	ld a, [wYCoord]
-	cp 4 ; is the player standing below the table?
-	jr z, .moveBlue
-	ld de, .MiddleBallMovement2
-	jr .moveBlue
+	checkmem wYCoord
+	ifeq 4, .charman_mov1
+	applymovement OAKSLAB_RIVAL, .MiddleBallMovement2
+	jr .scrend
 
+.charman_mov1
+	applymovement OAKSLAB_RIVAL, .MiddleBallMovement1
+	jr .scrend
+
+.Squirtle
+	checkmem wYCoord
+	ifeq 4, .squirtle_mov1
+	applymovement OAKSLAB_RIVAL, .RightBallMovement2
+	jr .scrend
+
+.squirtle_mov1
+	applymovement OAKSLAB_RIVAL, .RightBallMovement1
+	jr .scrend
+
+.Bulbasaur
+	checkmem wXCoord
+	ifneq 9, .bulba_mov1 ; is the player standing to the right of the table?
+	push hl
+	
+	memseth hSpriteIndex, OAKSLAB_RIVAL
+	memseth hSpriteDataOffset, SPRITESTATEDATA1_YPIXELS
+	call GetPointerWithinSpriteStateData1
+	push hl
+	ld [hl], $4c ; SPRITESTATEDATA1_YPIXELS
+	inc hl
+	inc hl
+	ld [hl], $0 ; SPRITESTATEDATA1_XPIXELS
+	pop hl
+	inc h
+	ld [hl], 8 ; SPRITESTATEDATA2_MAPY
+	inc hl
+	ld [hl], 9 ; SPRITESTATEDATA2_MAPX
+	pop hl
+	applymovement OAKSLAB_RIVAL, .LeftBallMovement2
+	jr .scrend
+.bulba_mov1
+	applymovement OAKSLAB_RIVAL, .LeftBallMovement1
+.scrend
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_RIVAL_CHOOSES_STARTER
+	ret
+	
+.LeftBallMovement1
+	db NPC_MOVEMENT_DOWN
+	db NPC_MOVEMENT_RIGHT
+.LeftBallMovement2
+	db NPC_MOVEMENT_RIGHT
+	db -1 ; end
+	
 .MiddleBallMovement1
 	db NPC_MOVEMENT_DOWN
 	db NPC_MOVEMENT_DOWN
@@ -154,15 +191,7 @@ OaksLabChoseStarterScript:
 	db NPC_MOVEMENT_RIGHT
 	db NPC_MOVEMENT_RIGHT
 	db -1 ; end
-
-.Squirtle
-	ld de, .RightBallMovement1
-	ld a, [wYCoord]
-	cp 4 ; is the player standing below the table?
-	jr z, .moveBlue
-	ld de, .RightBallMovement2
-	jr .moveBlue
-
+	
 .RightBallMovement1
 	db NPC_MOVEMENT_DOWN
 	db NPC_MOVEMENT_DOWN
@@ -181,219 +210,104 @@ OaksLabChoseStarterScript:
 	db NPC_MOVEMENT_RIGHT
 	db -1 ; end
 
-.Bulbasaur
-	ld de, .LeftBallMovement1
-	ld a, [wXCoord]
-	cp 9 ; is the player standing to the right of the table?
-	jr nz, .moveBlue
-	push hl
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	ld a, SPRITESTATEDATA1_YPIXELS
-	ldh [hSpriteDataOffset], a
-	call GetPointerWithinSpriteStateData1
-	push hl
-	ld [hl], $4c ; SPRITESTATEDATA1_YPIXELS
-	inc hl
-	inc hl
-	ld [hl], $0 ; SPRITESTATEDATA1_XPIXELS
-	pop hl
-	inc h
-	ld [hl], 8 ; SPRITESTATEDATA2_MAPY
-	inc hl
-	ld [hl], 9 ; SPRITESTATEDATA2_MAPX
-	ld de, .LeftBallMovement2 ; the rival is not currently onscreen, so account for that
-	pop hl
-	jr .moveBlue
-
-.LeftBallMovement1
-	db NPC_MOVEMENT_DOWN
-	db NPC_MOVEMENT_RIGHT
-.LeftBallMovement2
-	db NPC_MOVEMENT_RIGHT
-	db -1 ; end
-
-.moveBlue
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	call MoveSprite
-
-	ld a, SCRIPT_OAKSLAB_RIVAL_CHOOSES_STARTER
-	ld [wOaksLabCurScript], a
-	ret
-
 OaksLabRivalChoosesStarterScript:
-	ld a, [wStatusFlags5]
-	bit BIT_SCRIPTED_NPC_MOVEMENT, a
-	ret nz
-	ld a, PAD_SELECT | PAD_START | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	ld a, SPRITE_FACING_UP
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
-	ld a, TEXT_OAKSLAB_RIVAL_ILL_TAKE_THIS_ONE
-	ldh [hTextID], a
-	call DisplayTextID
-	ld a, [wRivalStarterBallSpriteIndex]
-	cp OAKSLAB_CHARMANDER_POKE_BALL
-	jr nz, .not_charmander
-	ld a, HS_STARTER_BALL_1
-	jr .hideBallAndContinue
+	endifnpcmoving
+	lockctrls_all
+	spritedir OAKSLAB_RIVAL, SPRITE_FACING_UP
+	writetextm TEXT_OAKSLAB_RIVAL_ILL_TAKE_THIS_ONE
+	checkmem wRivalStarterBallSpriteIndex
+	ifneq OAKSLAB_CHARMANDER_POKE_BALL, .not_charmander
+	disappearobj HS_STARTER_BALL_1
+	jr .conteenyu
 .not_charmander
-	cp OAKSLAB_SQUIRTLE_POKE_BALL
-	jr nz, .not_squirtle
-	ld a, HS_STARTER_BALL_2
-	jr .hideBallAndContinue
+	ifneq OAKSLAB_SQUIRTLE_POKE_BALL, .not_squirtle
+	disappearobj HS_STARTER_BALL_2
+	jr .conteenyu
 .not_squirtle
-	ld a, HS_STARTER_BALL_3
-.hideBallAndContinue
-	ld [wMissableObjectIndex], a
-	predef HideObject
+	disappearobj HS_STARTER_BALL_3
+.conteenyu
 	call Delay3
 	ld a, [wRivalStarterTemp]
 	ld [wRivalStarter], a
 	ld [wCurPartySpecies], a
 	ld [wNamedObjectIndex], a
 	call GetMonName
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	ld a, SPRITE_FACING_UP
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
-	ld a, TEXT_OAKSLAB_RIVAL_RECEIVED_MON
-	ldh [hTextID], a
-	call DisplayTextID
+	
+	spritedir OAKSLAB_RIVAL, SPRITE_FACING_UP
+
+	writetextm TEXT_OAKSLAB_RIVAL_RECEIVED_MON
 	SetEvent EVENT_GOT_STARTER
-	xor a
-	ld [wJoyIgnore], a
+	releasectrls
 
 	ld a, SCRIPT_OAKSLAB_RIVAL_CHALLENGES_PLAYER
 	ld [wOaksLabCurScript], a
 	ret
 
 OaksLabRivalChallengesPlayerScript:
-	ld a, [wYCoord]
-	cp 6
-	ret nz
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	xor a ; SPRITE_FACING_DOWN
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
-	ld a, PLAYER_DIR_UP
-	ld [wPlayerMovingDirection], a
-	ld c, 0 ; BANK(Music_MeetRival)
-	ld a, MUSIC_MEET_RIVAL
-	call PlayMusic
-	ld a, TEXT_OAKSLAB_RIVAL_ILL_TAKE_YOU_ON
-	ldh [hTextID], a
-	call DisplayTextID
-	
-	ld a, $1
-	ldh [hNPCPlayerRelativePosPerspective], a
-	ld a, $1
-	swap a
-	ldh [hNPCSpriteOffset], a
-	predef CalcPositionOfPlayerRelativeToNPC
-	ldh a, [hNPCPlayerYDistance]
-	dec a
-	ldh [hNPCPlayerYDistance], a
-	predef FindPathToPlayer
-	ld de, wNPCMovementDirections2
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	call MoveSprite
-
-	ld a, SCRIPT_OAKSLAB_RIVAL_START_BATTLE
-	ld [wOaksLabCurScript], a
+	checkmem wYCoord
+	endifneq 6
+	spritedir OAKSLAB_RIVAL, SPRITE_FACING_DOWN
+	turnplayer PLAYER_DIR_UP
+	playmusic MUSIC_MEET_RIVAL
+	writetextm TEXT_OAKSLAB_RIVAL_ILL_TAKE_YOU_ON
+	locateplayer
+	applymovement OAKSLAB_RIVAL, wNPCMovementDirections2
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_RIVAL_START_BATTLE
 	ret
 
 OaksLabRivalStartBattleScript:
-	ld a, [wStatusFlags5]
-	bit BIT_SCRIPTED_NPC_MOVEMENT, a
-	ret nz
-
+	endifnpcmoving
 	; define which team rival uses, and fight it
-	ld a, OPP_RIVAL1
-	ld [wCurOpponent], a
-	ld a, [wRivalStarter]
-	cp STARTER2
-	jr nz, .not_squirtle
-	ld a, $1
+	checkmem wRivalStarter
+	ifneq STARTER2, .not_squirtle
+	loadtrainer OPP_RIVAL1, 1
 	jr .done
 .not_squirtle
-	cp STARTER3
-	jr nz, .not_bulbasaur
-	ld a, $2
+	ifneq STARTER3, .not_bulbasaur
+	loadtrainer OPP_RIVAL1, 2
 	jr .done
 .not_bulbasaur
-	ld a, $3
+	loadtrainer OPP_RIVAL1, 3
 .done
-	ld [wTrainerNo], a
-	ld a, OAKSLAB_RIVAL
-	ld [wSpriteIndex], a
+	memset wSpriteIndex, OAKSLAB_RIVAL
 	call GetSpritePosition1
-	ld hl, OaksLabRivalIPickedTheWrongPokemonText
-	ld de, OaksLabRivalAmIGreatOrWhatText
-	call SaveEndBattleTextPointers
-	ld hl, wStatusFlags3
-	set BIT_TALKED_TO_TRAINER, [hl]
-	set BIT_PRINT_END_BATTLE_TEXT, [hl]
-	xor a
-	ld [wJoyIgnore], a
-	ld a, PLAYER_DIR_UP
-	ld [wPlayerMovingDirection], a
-	ld a, SCRIPT_OAKSLAB_RIVAL_END_BATTLE
-	ld [wOaksLabCurScript], a
+	winlosstext OaksLabRivalIPickedTheWrongPokemonText, OaksLabRivalAmIGreatOrWhatText
+	setbit wStatusFlags3, BIT_TALKED_TO_TRAINER
+	setbit wStatusFlags3, BIT_PRINT_END_BATTLE_TEXT
+	releasectrls
+	turnplayer PLAYER_DIR_UP
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_RIVAL_END_BATTLE
 	ret
 
 OaksLabRivalEndBattleScript:
-	ld a, PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-	ld a, PLAYER_DIR_UP
-	ld [wPlayerMovingDirection], a
+	lockctrls_nostart
+	turnplayer PLAYER_DIR_UP
 	call UpdateSprites
-	ld a, OAKSLAB_RIVAL
-	ld [wSpriteIndex], a
+	memset wSpriteIndex, OAKSLAB_RIVAL
 	call SetSpritePosition1
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	xor a ; SPRITE_FACING_DOWN
-	ldh [hSpriteFacingDirection], a
-	call SetSpriteFacingDirectionAndDelay
+	spritedir OAKSLAB_RIVAL, SPRITE_FACING_DOWN
 	predef HealParty
 	SetEvent EVENT_BATTLED_RIVAL_IN_OAKS_LAB
-
-	ld a, SCRIPT_OAKSLAB_RIVAL_STARTS_EXIT
-	ld [wOaksLabCurScript], a
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_RIVAL_STARTS_EXIT
 	ret
 
 OaksLabRivalStartsExitScript:
-	ld c, 20
-	call DelayFrames
-	ld a, TEXT_OAKSLAB_RIVAL_SMELL_YOU_LATER
-	ldh [hTextID], a
-	call DisplayTextID
+	waitframes 20
+	writetextm TEXT_OAKSLAB_RIVAL_SMELL_YOU_LATER
 	farcall Music_RivalAlternateStart
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	ld de, .RivalExitMovement
-	call MoveSprite
-	ld a, [wXCoord]
-	cp 4
+	
+	applymovement OAKSLAB_RIVAL, .RivalExitMovement
+	checkmem wXCoord
 	; move left or right depending on where the player is standing
-	jr nz, .moveLeft
-	ld a, NPC_MOVEMENT_RIGHT
-	jr .next
+	ifneq 4, .moveLeft
+	jr .moveRight
 .moveLeft
-	ld a, NPC_MOVEMENT_LEFT
+	memset wNPCMovementDirections, NPC_MOVEMENT_LEFT
+	jr .next
+.moveRight
+	memset wNPCMovementDirections, NPC_MOVEMENT_RIGHT
 .next
-	ld [wNPCMovementDirections], a
-
-	ld a, SCRIPT_OAKSLAB_PLAYER_WATCH_RIVAL_EXIT
-	ld [wOaksLabCurScript], a
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_PLAYER_WATCH_RIVAL_EXIT
 	ret
 
 .RivalExitMovement
@@ -406,38 +320,27 @@ OaksLabRivalStartsExitScript:
 	db -1 ; end
 
 OaksLabPlayerWatchRivalExitScript:
-	ld a, [wStatusFlags5]
-	bit BIT_SCRIPTED_NPC_MOVEMENT, a
-	jr nz, .checkRivalPosition
-	ld a, HS_OAKS_LAB_RIVAL
-	ld [wMissableObjectIndex], a
-	predef HideObject
-	xor a
-	ld [wJoyIgnore], a
-	call PlayDefaultMusic ; reset to map music
-	ld a, SCRIPT_OAKSLAB_NOOP
-	ld [wOaksLabCurScript], a
+	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
+	iftrue .checkRivalPosition
+	disappearobj HS_OAKS_LAB_RIVAL
+	releasectrls
+	playmapmusic
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_NOOP
 	jr .done
 ; make the player keep facing the rival as he walks away
 .checkRivalPosition
-	ld a, [wNPCNumScriptedSteps]
-	cp $5
-	jr nz, .turnPlayerDown
-	ld a, [wXCoord]
-	cp 4
-	jr nz, .turnPlayerLeft
-	ld a, SPRITE_FACING_RIGHT
-	ld [wSpritePlayerStateData1FacingDirection], a
+	checkmem wNPCNumScriptedSteps
+	ifneq 5, .turnPlayerDown
+	checkmem wXCoord
+	ifneq 4, .turnPlayerLeft
+	memset wSpritePlayerStateData1FacingDirection, SPRITE_FACING_RIGHT
 	jr .done
 .turnPlayerLeft
-	ld a, SPRITE_FACING_LEFT
-	ld [wSpritePlayerStateData1FacingDirection], a
+	memset wSpritePlayerStateData1FacingDirection, SPRITE_FACING_LEFT
 	jr .done
 .turnPlayerDown
-	cp $4
-	ret nz
-	xor a ; ld a, SPRITE_FACING_DOWN
-	ld [wSpritePlayerStateData1FacingDirection], a
+	endifneq 4
+	memset wSpritePlayerStateData1FacingDirection, SPRITE_FACING_DOWN
 .done
 	ret
 
