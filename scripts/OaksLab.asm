@@ -633,30 +633,24 @@ OaksLabRivalText:
 
 OaksLabCharmanderPokeBallText:
 	text_asm
-	ld a, STARTER2
-	ld [wRivalStarterTemp], a
-	ld a, OAKSLAB_SQUIRTLE_POKE_BALL
-	ld [wRivalStarterBallSpriteIndex], a
+	memset wRivalStarterTemp, STARTER2
+	memset wRivalStarterBallSpriteIndex, OAKSLAB_SQUIRTLE_POKE_BALL
 	ld a, STARTER1
 	ld b, OAKSLAB_CHARMANDER_POKE_BALL
 	jr OaksLabSelectedPokeBallScript
 
 OaksLabSquirtlePokeBallText:
 	text_asm
-	ld a, STARTER3
-	ld [wRivalStarterTemp], a
-	ld a, OAKSLAB_BULBASAUR_POKE_BALL
-	ld [wRivalStarterBallSpriteIndex], a
+	memset wRivalStarterTemp, STARTER3
+	memset wRivalStarterBallSpriteIndex, OAKSLAB_BULBASAUR_POKE_BALL
 	ld a, STARTER2
 	ld b, OAKSLAB_SQUIRTLE_POKE_BALL
 	jr OaksLabSelectedPokeBallScript
 
 OaksLabBulbasaurPokeBallText:
 	text_asm
-	ld a, STARTER1
-	ld [wRivalStarterTemp], a
-	ld a, OAKSLAB_CHARMANDER_POKE_BALL
-	ld [wRivalStarterBallSpriteIndex], a
+	memset wRivalStarterTemp, STARTER1
+	memset wRivalStarterBallSpriteIndex, OAKSLAB_CHARMANDER_POKE_BALL
 	ld a, STARTER3
 	ld b, OAKSLAB_BULBASAUR_POKE_BALL
 
@@ -666,11 +660,10 @@ OaksLabSelectedPokeBallScript:
 	ld a, b
 	ld [wSpriteIndex], a
 	CheckEvent EVENT_GOT_STARTER
-	jp nz, OaksLabLastMonScript
+	iftrue OaksLabLastMonScript
 	CheckEventReuseA EVENT_OAK_ASKED_TO_CHOOSE_MON
 	jr nz, OaksLabShowPokeBallPokemonScript
-	ld hl, OaksLabThoseArePokeBallsText
-	call PrintText
+	writetext OaksLabThoseArePokeBallsText
 	jp TextScriptEnd
 
 OaksLabThoseArePokeBallsText:
@@ -678,31 +671,23 @@ OaksLabThoseArePokeBallsText:
 	text_end
 
 OaksLabShowPokeBallPokemonScript:
-	ld a, OAKSLAB_OAK1
-	ldh [hSpriteIndex], a
-	ld a, SPRITESTATEDATA1_FACINGDIRECTION
-	ldh [hSpriteDataOffset], a
+	memseth hSpriteIndex, OAKSLAB_OAK1
+	memseth hSpriteDataOffset, SPRITESTATEDATA1_FACINGDIRECTION
 	call GetPointerWithinSpriteStateData1
 	ld [hl], SPRITE_FACING_DOWN
-	ld a, OAKSLAB_RIVAL
-	ldh [hSpriteIndex], a
-	ld a, SPRITESTATEDATA1_FACINGDIRECTION
-	ldh [hSpriteDataOffset], a
+	
+	memseth hSpriteIndex, OAKSLAB_RIVAL
+	memseth hSpriteDataOffset, SPRITESTATEDATA1_FACINGDIRECTION
 	call GetPointerWithinSpriteStateData1
 	ld [hl], SPRITE_FACING_RIGHT
-	ld hl, wStatusFlags5
-	set BIT_NO_TEXT_DELAY, [hl]
+	setbit wStatusFlags5, BIT_NO_TEXT_DELAY
 	predef StarterDex
-	ld hl, wStatusFlags5
-	res BIT_NO_TEXT_DELAY, [hl]
+	resetbit wStatusFlags5, BIT_NO_TEXT_DELAY
 	call ReloadMapData
-	ld c, 10
-	call DelayFrames
-	ld a, [wSpriteIndex]
-	cp OAKSLAB_CHARMANDER_POKE_BALL
-	jr z, OaksLabYouWantCharmanderText
-	cp OAKSLAB_SQUIRTLE_POKE_BALL
-	jr z, OaksLabYouWantSquirtleText
+	waitframes 10
+	checkmem wSpriteIndex
+	ifeq OAKSLAB_CHARMANDER_POKE_BALL, OaksLabYouWantCharmanderText
+	ifeq OAKSLAB_SQUIRTLE_POKE_BALL, OaksLabYouWantSquirtleText
 	jr OaksLabYouWantBulbasaurText
 
 OaksLabYouWantCharmanderText:
@@ -728,50 +713,33 @@ OaksLabYouWantBulbasaurText:
 
 OaksLabMonChoiceMenu:
 	call PrintText
-	ld a, $1
-	ld [wDoNotWaitForButtonPressAfterDisplayingText], a
+	disablewaitbutton
 	call YesNoChoice ; yes/no menu
-	ld a, [wCurrentMenuItem]
-	and a
-	jr nz, OaksLabMonChoiceEnd
-	ld a, [wCurPartySpecies]
-	ld [wPlayerStarter], a
-	ld [wNamedObjectIndex], a
+	ifno OaksLabMonChoiceEnd
+	memset16 wPlayerStarter, wCurPartySpecies
+	memset16 wNamedObjectIndex, wCurPartySpecies
 	call GetMonName
-	ld a, [wSpriteIndex]
-	cp OAKSLAB_CHARMANDER_POKE_BALL
-	jr nz, .not_charmander
-	ld a, HS_STARTER_BALL_1
+	checkmem wSpriteIndex
+	ifneq OAKSLAB_CHARMANDER_POKE_BALL, .not_charmander
+	disappearobj HS_STARTER_BALL_1
 	jr .continue
 .not_charmander
-	cp OAKSLAB_SQUIRTLE_POKE_BALL
-	jr nz, .not_squirtle
-	ld a, HS_STARTER_BALL_2
+	ifneq OAKSLAB_SQUIRTLE_POKE_BALL, .not_squirtle
+	disappearobj HS_STARTER_BALL_2
 	jr .continue
 .not_squirtle
-	ld a, HS_STARTER_BALL_3
+	disappearobj HS_STARTER_BALL_3
 .continue
-	ld [wMissableObjectIndex], a
-	predef HideObject
-	ld a, $1
-	ld [wDoNotWaitForButtonPressAfterDisplayingText], a
-	ld hl, OaksLabMonEnergeticText
-	call PrintText
-	ld hl, OaksLabReceivedMonText
-	call PrintText
-	xor a ; PLAYER_PARTY_DATA
-	ld [wMonDataLocation], a
-	ld a, 5
-	ld [wCurEnemyLevel], a
-	ld a, [wCurPartySpecies]
-	ld [wPokedexNum], a
+	disablewaitbutton
+	writetext OaksLabMonEnergeticText
+	writetext OaksLabReceivedMonText
+	memset wMonDataLocation, 0 ; PLAYER_PARTY_DATA
+	memset wCurEnemyLevel, 5
+	memset16 wPokedexNum, wCurPartySpecies
 	call AddPartyMon
-	ld hl, wStatusFlags4
-	set BIT_GOT_STARTER, [hl]
-	ld a, PAD_SELECT | PAD_START | PAD_CTRL_PAD
-	ld [wJoyIgnore], a
-	ld a, SCRIPT_OAKSLAB_CHOSE_STARTER_SCRIPT
-	ld [wOaksLabCurScript], a
+	setbit wStatusFlags4, BIT_GOT_STARTER
+	lockctrls_all
+	memset wOaksLabCurScript, SCRIPT_OAKSLAB_CHOSE_STARTER_SCRIPT
 OaksLabMonChoiceEnd:
 	jp TextScriptEnd
 
@@ -785,14 +753,11 @@ OaksLabReceivedMonText:
 	text_end
 
 OaksLabLastMonScript:
-	ld a, OAKSLAB_OAK1
-	ldh [hSpriteIndex], a
-	ld a, SPRITESTATEDATA1_FACINGDIRECTION
-	ldh [hSpriteDataOffset], a
+	memseth hSpriteIndex, OAKSLAB_OAK1
+	memseth hSpriteDataOffset, SPRITESTATEDATA1_FACINGDIRECTION
 	call GetPointerWithinSpriteStateData1
 	ld [hl], SPRITE_FACING_DOWN
-	ld hl, OaksLabLastMonText
-	call PrintText
+	writetext OaksLabLastMonText
 	jp TextScriptEnd
 
 OaksLabLastMonText:

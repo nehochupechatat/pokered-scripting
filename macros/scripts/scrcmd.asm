@@ -118,3 +118,16 @@ MACRO endifnpcmoving
 	checkbit wStatusFlags5, BIT_SCRIPTED_NPC_MOVEMENT
 	endiftrue
 ENDM
+
+MACRO givepokemon
+	lb bc, \1, \2
+	call GivePokemon
+ENDM
+
+MACRO ifno 
+	if_memand_unset wCurrentMenuItem, \1
+ENDM
+
+MACRO ifyes
+	if_memand_set wCurrentMenuItem, \1
+ENDM

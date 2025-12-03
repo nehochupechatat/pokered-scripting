@@ -1,5 +1,10 @@
-MACRO memset ;wram
+MACRO memset ;wram, input val is 8bit
 	ld a, \2
+	ld [\1], a
+ENDM
+
+MACRO memset16 ;wram, input val is 16bit
+	ld a, [\2]
 	ld [\1], a
 ENDM
 
@@ -85,4 +90,16 @@ MACRO endif_memand_unset
 	checkmem \1
 	checkbool
 	endifbunset
+ENDM
+
+MACRO if_memand_unset
+	checkmem \1
+	checkbool
+	jp nz, \2
+ENDM
+
+MACRO if_memand_set
+	checkmem \1
+	checkbool
+	jp z, \2
 ENDM
